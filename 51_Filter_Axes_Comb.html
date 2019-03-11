@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Scatter Chart Axes with Combinated Filter</title>
+        <script type="text/javascript" src='https://d3js.org/d3.v5.min.js'></script>
+        <style type="text/css">
+			p {
+                font-family: Helvetica, sans-serif;
+                font-size: 12px;
+            }
+
+            input[type=radio /*gaga*/] {
+                margin-left: 40px;
+            }
+		</style>
+    </head>
+    <body>
+
+        <!--Elementos de interaccion-->  
+        <p>
+            Amigo amigo, ¿Que quieres hacer?
+        </p>
+        <p>
+            <input type="radio" name="filterPreset" value="none" checked="true"> Nada
+            <input type="radio" name="filterPreset" value="center"> Centro
+            <input type="radio" name="filterPreset" value="edges"> Bordes
+            <input type="radio" name="filterPreset" value="quadrants"> Cuadrantes
+            <input type="radio" name="filterPreset" value="random"> Random
+        </p>
+
+        <script type="text/javascript">
+ 
+            //Width and height
+            var w = 600;
+            var h = 300; // Puedes probar a poner 300 para cambiar la escala vertical
+            var padding = 40; // Relleno: Borde para corregir los elementos que aparecen cortados
+            // Tambien es recomendable utilizar variables separadas de padding (xPaddingy, yPadding)
+            
+            // Dynamic, random dataset
+            var dataset = [];                    // Inicializa vector   
+            var numDataPoints = 200;             // Numero de puntos (Son muchos eh)
+            var maxRange = 1000;                 // Rango de los valores
+
+            for (var i = 0; i < numDataPoints; i++) {
+                var newNumber1 = Math.floor(Math.random() * maxRange);
+                var newNumber2 = Math.floor(Math.random() * maxRange);
+                dataset.push([newNumber1, newNumber2]);
+            }   
+
+            // Area SVG
+            var svg = d3.select("body")
+                       .append("svg")
+                       .attr("width",w)
+                       .attr("height", h);
+
+            // Escala parametrizable
+            var xScale = d3.scaleLinear()
+                            .domain([0, d3.max(dataset, function(d){ 
+                                return d[0]; // Valor de los puntos del eje X
+                            })])
+                            .range([padding, w - padding*2]); // Añade unos bordes con padding
+                            //.nice() // Nos sirve para redondear los valores muy tochos
+                            
+            var yScale = d3.scaleLinear()
+                            .domain([0, d3.max(dataset, function(d){ 
+                                return d[1]; // Valor de los puntos del eje Y
+                            })])
+                            .range([h - padding, padding]); // Hemos cambiado el rango de salida para que
+                                            // los numeros inferiores aparezcan abajo
+
+            // Ejes
+            var xAxis = d3.axisBottom() // Donde van a aparecer las etiquetas
+                                .scale(xScale)
+                                .ticks(5); // Numero de marcadores (divisores)
+                                // D3 va a poner 7 para que quede mejor
+
+            var yAxis = d3.axisLeft() // Donde van a aparecer las etiquetas
+                                .scale(yScale)
+                                .ticks(5); // Numero de marcadores (divisores)  
+                                            
+            // Dibuja Puntos
+            var allCircles = svg.selectAll("circle") // Todosirculos
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d){
+                    return xScale(d[0]); // Primer valor del bloque
+                })
+                .attr("cy", function(d){
+                    return yScale(d[1]); // Segundo valor del bloque
+                })
+                .attr("r", 2);
+
+            // Dibuja Ejes
+            svg.append("g")
+                .attr("class", "axis")  //Assign "axis" class
+                .attr("transform", "translate(0," + (h - padding) + ")") // De esta forma lo 
+				.call(xAxis);                                            // "empujamos" al fondo
+        
+            svg.append("g")
+                .attr("class", "axis")  //Assign "axis" class
+                .attr("transform", "translate(" + padding + ")")
+				.call(yAxis); 
+
+            // Event Listener
+            d3.selectAll("input") // Ojo al selectAll
+                .on("click", function(){
+
+                    // Vista
+                    var view = d3.select(this).node().value;
+                    
+                    // Creo la variable allCircles, asi me ahorro el selectAll
+                    allCircles.attr("fill", "black"); // Reset
+
+                    var midpoint = 500; // El centro
+                    var colors = d3.schemePastel2; // Me gustan los colores pastel, vale?
+                    var colorRand = Math.round(Math.random()*10);
+                    
+                    // Random Function
+                    var RandomFun = function(d, i) {
+
+                        d3.select(this)
+                            .transition()
+                            .delay(i*25)
+                            .duration(1000)
+                            .ease(d3.easeElasticOut)
+                            .attr("fill", colors[colorRand])
+                            .attr("r", 25)
+                            // Lo deshago
+                            .transition()
+                            .delay(i*25)
+                            .duration(1000)
+                            .ease(d3.easeElasticOut)
+                            .attr("fill", "black")
+                            .attr("r", 2);
+
+                    };
+
+					switch (view) {
+
+						case "center":
+							
+							var distance = 330;
+
+							allCircles.filter(function(d) {
+									return Math.abs(midpoint - d[0]) < distance && Math.abs(midpoint - d[1]) < distance;
+								})
+								.attr("fill", colors[1]);
+
+							break;
+
+						case "edges":
+							
+							var distance = 330;
+
+							allCircles.filter(function(d) {
+									return Math.abs(midpoint - d[0]) > distance || Math.abs(midpoint - d[1]) > distance;
+								})
+								.attr("fill", colors[3]);
+
+							break;
+
+						case "quadrants":
+							
+							// Arriba izquierda
+							allCircles.filter(function(d) {
+									return d[0] <= midpoint && d[1] >= midpoint;
+								})
+								.attr("fill", colors[0]);
+							
+							// Arriba derecha
+							allCircles.filter(function(d) {
+									return d[0] > midpoint && d[1] >= midpoint;
+								})
+								.attr("fill", colors[1]);
+
+							// Abajo derecha
+							allCircles.filter(function(d) {
+									return d[0] > midpoint && d[1] < midpoint;
+								})
+								.attr("fill", colors[2]);
+
+							// Abajo izquierda
+							allCircles.filter(function(d) {
+									return d[0] <= midpoint && d[1] < midpoint;
+								})
+								.attr("fill", colors[3]);
+
+							break;
+                        
+                        case "random":
+                                allCircles.each(RandomFun);
+							break;
+
+						case "none":
+						default:
+                        // Meh
+                    }
+                });
+        </script>
+    </body>
+</html>

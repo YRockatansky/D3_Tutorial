@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Scatter Chart with Update</title>
+        <script type="text/javascript" src='https://d3js.org/d3.v5.min.js'></script>
+        <style type="text/css">
+			/* No style rules here yet */
+		</style>
+    </head>
+    <body>
+
+        <!--Elemento de interaccion-->       
+        <p>Pulsa aquí para actualizar.</p>
+
+        <script type="text/javascript">
+
+            // Formateo de las etiquetas de marcadores
+
+            var formatAsPercentage = d3.format(".1%");
+
+            // Coordenadas de los puntos
+            
+            // Dynamic, random dataset
+            var dataset = [];                    // Inicializa vector   
+            var numDataPoints = 50;              // Numero de puntos
+            var maxRange = Math.random() * 1000; // Rango de los valores
+
+            for (var i = 0; i < numDataPoints; i++) {
+                var newNumber1 = Math.floor(Math.random() * maxRange);
+                var newNumber2 = Math.floor(Math.random() * maxRange);
+                dataset.push([newNumber1, newNumber2]);
+            }
+            
+            //Width and height
+            var w = 500;
+            var h = 300; // Puedes probar a poner 300 para cambiar la escala vertical
+            var padding = 30; // Relleno: Borde para corregir los elementos que aparecen cortados
+            // Tambien es recomendable utilizar variables separadas de padding (xPaddingy, yPadding)
+
+            // Area SVG
+            var svg = d3.select("body")
+                       .append("svg")
+                       .attr("width",w)
+                       .attr("height", h);
+
+            // Escala parametrizable
+            var xScale = d3.scaleLinear()
+                            .domain([0, d3.max(dataset, function(d){ 
+                                return d[0]; // Valor de los puntos del eje X
+                            })])
+                            .range([padding, w - padding*2]); // Añade unos bordes con padding
+                            //.nice() // Nos sirve para redondear los valores muy tochos
+                            
+            var yScale = d3.scaleLinear()
+                            .domain([0, d3.max(dataset, function(d){ 
+                                return d[1]; // Valor de los puntos del eje Y
+                            })])
+                            .range([h - padding, padding]); // Hemos cambiado el rango de salida para que
+                                            // los numeros inferiores aparezcan abajo
+
+            // Ejes
+            var xAxis = d3.axisBottom() // Donde van a aparecer las etiquetas
+                                .scale(xScale)
+                                .ticks(5); // Numero de marcadores (divisores)
+                                // D3 va a poner 7 para que quede mejor
+
+            var yAxis = d3.axisLeft() // Donde van a aparecer las etiquetas
+                                .scale(yScale)
+                                .ticks(5); // Numero de marcadores (divisores)  
+                                            
+            // Dibuja Puntos
+            svg.selectAll("circle")
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d){
+                    return xScale(d[0]); // Primer valor del bloque
+                })
+                .attr("cy", function(d){
+                    return yScale(d[1]); // Segundo valor del bloque
+                })
+                .attr("r", 2);       
+
+            // Dibuja Ejes
+            svg.append("g")
+                .attr("class", "x axis")  // Hemos renombrado a x axis
+                .attr("transform", "translate(0," + (h - padding) + ")") // De esta forma lo 
+				.call(xAxis);                                            // "empujamos" al fondo
+        
+            svg.append("g")
+                .attr("class", "y axis")  // Hemos renombrado a y axis
+                .attr("transform", "translate(" + padding + ")")
+				.call(yAxis); 
+
+            // Event Listener
+            d3.select("p")
+                .on("click", function(){ // Actualiza con click
+                    
+                    // Dynamic, random dataset
+                    var dataset = [];                    // Inicializa vector   
+                    var numDataPoints = 50;              // Numero de puntos
+                    var maxRange = Math.random() * 1000; // Rango de los valores
+
+                    for (var i = 0; i < numDataPoints; i++) {
+                        var newNumber1 = Math.floor(Math.random() * maxRange);
+                        var newNumber2 = Math.floor(Math.random() * maxRange);
+                        dataset.push([newNumber1, newNumber2]);
+                    }
+
+                    // Actualiza escala
+					xScale.domain([0, d3.max(dataset, function(d) {
+                         return d[0];
+                    })]);
+					yScale.domain([0, d3.max(dataset, function(d) { 
+                        return d[1]; 
+                    })]);
+
+					// Actualiza puntos
+					svg.selectAll("circle")
+					   .data(dataset)
+					   .transition()
+   					   .duration(1000)
+					   .attr("cx", function(d) {
+					   		return xScale(d[0]);
+					   })
+					   .attr("cy", function(d) {
+					   		return yScale(d[1]);
+					   });
+
+                    // Actualiza ejes
+                    svg.select(".x.axis")
+                        .transition()
+                        .duration(1000)
+                        .call(xAxis)
+                    
+                    svg.select(".y.axis")
+                        .transition()
+                        .duration(1000)
+                        .call(yAxis)
+                });
+        </script>
+    </body>
+</html>

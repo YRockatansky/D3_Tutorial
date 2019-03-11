@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Associate Data with Filter</title>
+        <script type="text/javascript" src='https://d3js.org/d3.v5.min.js'></script>
+    </head>
+    <body>
+        <script type="text/javascript">
+            // Your beautiful D3 code will go here
+            var dataset = dataset = [5, 10, 15, 20, 25];
+
+            d3.select("body").selectAll("p")
+                .data(dataset)
+                .enter()
+                .append("p")
+                .text(function(d){
+                    return "I can count up to " + d;
+                })
+                // Aplicamos el filtro
+                .filter(function(d){ // Todos los datos del dataset
+                    return d>15; // Devuelve True si se cumple
+                })
+                .style("color", "red"); // Se aplica solo al elemento filtrado
+                
+                /* Otra manera
+                
+                var allParas = d3.select("body").selectAll("p")
+                .data(dataset)
+                .enter()
+                .append("p")
+                .text(function(d) {
+                    return "I can count up to " + d;
+                });
+
+                var redParas = allParas.filter(function(d) {
+                    return d > 15;
+                })
+                .style("color", "red");
+                
+                * Si miro allParas en la consola, referencia a
+                * los 5 parrafos, mientras que si miro redParas
+                * referencia a los 2 que son mayores de 15
+                */
+
+        </script>
+    </body>
+</html>

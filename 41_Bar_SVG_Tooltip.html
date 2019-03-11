@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Bar Chart with SVG Element Tooltips</title>
+        <script type="text/javascript" src='https://d3js.org/d3.v5.min.js'></script>
+        <style type="text/css">
+            
+            rect:hover {        
+                fill: orange;   
+            }               
+            /* 
+            * Al final hemos quitado la interaccion con el raton
+            * porque nos hemos dado cuenta de que la transicion
+            *  de ese efecto se solapaba con la de ordenar barras
+            */
+
+        </style>
+    </head>
+    <body>
+        <script type="text/javascript">
+        
+            // Datos
+            var dataset = [ 5, 10, 13, 19, 21, 25, 22, 18, 15, 13,
+            11, 12, 15, 20, 18, 17, 16, 18, 23, 25 ];
+
+            //Width and height
+            var w = 600;
+            var h = 250;
+
+            // Escala parametrizable
+            var xScale = d3.scaleBand() // Declara una escala "ordinaria" (Datos no lineales)
+                            .domain(d3.range(dataset.length)) // En la escala ordinaria serian como las categorias
+                            .rangeRound([0, w]) // Rango de salida (Lo divide en "bandas" según la entrada)
+                            .paddingInner(0.05); // Deja un 5% de la anchura de cada banda de borde
+                
+            var yScale = d3.scaleLinear()
+                            .domain([0, d3.max(dataset)])
+							.range([0, h]);
+
+            // Utilizamos SVG
+            var svg = d3.select("body")
+                        .append("svg")
+                        .attr("width", w)
+                        .attr("height", h);
+            
+            // Dibuja barras
+            svg.selectAll("rect")
+                .data(dataset)
+                .enter()         
+                .append("rect") 
+                .attr("x", function(d,i){ // Como las "categorias" son "0, 1, 2, 3..." y los datos
+                    return xScale(i);     // van en ese mismo orden, simplemente los colocamos de esa manera
+                })                             
+                .attr("y", function(d){    
+                    return h - yScale(d); // Recordemos que tiene que dibujarlo desde abajo
+                })
+                .attr("width",                      
+                    xScale.bandwidth() // Ya nos lo calcula D3
+                )                                   
+                .attr("height", function(d){
+                    return yScale(d); 
+                })
+                .attr("fill", function(d){
+                    return "rgb(0, 0, " + (d * 10) + ")"; // Se aproxima al azul segun 
+                })                                        // lo mayor que sea el dato                               
+                .on("mouseover", function(d){
+                    // Recordamos la posicion del texto
+                    var xPosition = parseFloat(d3.select(this).attr("x")) + xScale.bandwidth() / 2;
+                    var yPosition = parseFloat(d3.select(this).attr("y")) + 15;
+                    
+                    // Dibuja texto
+                    svg.append("text")
+                        .attr("id", "tooltip")
+                        .attr("x", xPosition)
+                        .attr("y", yPosition)
+                        .attr("text-anchor", "middle")
+                        .attr("font-family", "sans-serif")
+                        .attr("font-size", "11px")
+                        .attr("font-weight", "bold")
+                        .attr("fill", "white")
+                        .text(d);
+                })
+                .on("mouseout", function() {
+                    // Cuando quito el raton de encima
+                    d3.select("#tooltip").remove(); // Borra el Tooltip
+                })
+                .on("click", function(){
+                    sortBars(); // Llamamos a la funcion sortBars al hacer clic
+                });
+                
+            // Define flag (variable booleana)
+            var sortOrder = false;
+
+            // Funcion SortBars
+            var sortBars = function(){
+                // Voltea el valor
+                sortOrder = !sortOrder;
+                // Ordena barras
+                svg.selectAll("rect")
+                    .sort(function(a,b){
+                        if(sortOrder){
+                            return d3.ascending(a,b); // orden ascendente
+                        } else {
+                            return d3.descending(a,b);
+                        }
+                    })
+                    .transition()
+                    .delay(function(d, i) {
+                        return i * 50; // Podemos poner un delay para ver
+                    })                 // el movimiento de manera individual
+                    .duration(1000)
+                    .attr("x", function(d,i){
+                        return xScale(i);
+                    });
+            };
+        </script>
+    </body>
+</html>

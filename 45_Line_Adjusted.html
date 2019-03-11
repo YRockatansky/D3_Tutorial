@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Line Chart with Ajusted Scale</title>
+        <script type="text/javascript" src='https://d3js.org/d3.v5.min.js'></script>
+        <style type="text/css">
+            
+			.line {
+				fill: none;
+				stroke: teal;
+				stroke-width: 0.5;
+			}
+    
+            .safeLevel {
+                stroke: red;
+                stroke-dasharray: 2, 3; /* Es el patron de la linea discontinua */
+            }
+
+            .danger {
+                stroke: red;
+            }
+
+            .dangerLabel {
+                font-family: Helvetica, sans-serif;
+				font-size: 12px;
+				fill: red;
+            }
+
+		</style>
+    </head>
+    <body>
+        <script type="text/javascript">
+            // Width and height
+			var w = 800;
+			var h = 300;
+			var padding = 40;
+			
+			var dataset, xScale, yScale, xAxis, yAxis, line;  // De momento vacios
+            
+            // Para convertir el dato Dates a un string
+            var formatTime = d3.timeFormat("%Y");
+            var formatCO2 = d3.format(",");
+
+            // Row Conversion
+            var rowConverter = function(d){
+                return{
+                    // Objeto de fecha: año + mes
+                    date: new Date(+d.year, (+d.month - 1)),
+                    // Convierto de string a float
+                    average: parseFloat(d.average)
+                };
+            }
+
+            // Cargo el CSV
+            d3.csv("http://127.0.0.1:8080/mauna_loa_co2_monthly_averages.csv", rowConverter).then(function(data) {
+                
+                var dataset = data;
+
+                // Mostramos en consola para verificacion
+                //console.table(dataset, ["date", "average"]);
+
+                // Escala
+                xScale = d3.scaleTime()
+                            .domain([
+                                d3.min(dataset, function(d){return d.date;}),
+                                d3.max(dataset, function(d){return d.date;})
+                            ])
+                            .range([padding,w]);
+                yScale = d3.scaleTime()
+                            .domain([
+                                // Vamos a ajustar un poco mejor la escala
+                                // Le resto 10 para que no este tan ajustada
+                                d3.min(dataset, function(d) { if (d.average >= 0) return d.average; })-10,
+                                d3.max(dataset, function(d){return d.average;})])
+                            .range([h-padding,0]);
+
+                // Ejes
+                var xAxis = d3.axisBottom() // Donde van a aparecer las etiquetas
+                                .scale(xScale)
+                                .tickFormat(formatTime)
+                                .ticks(10); // Numero de marcadores (divisores)
+                                ;
+
+                var yAxis = d3.axisLeft() 
+                                .scale(yScale)
+                                .tickFormat(formatCO2)
+                                .ticks(10);
+                
+                // Genera linea
+                var line = d3.line()
+                            // Se ve que hay datos erroneos que simplemente estan por debajo de cero
+                            .defined(function(d){ return d.average>=0 && d.average <= 350;}) // Devuelve solo los datos
+                            .x(function(d){return xScale(d.date);})      // que estan por encima de cero
+                            .y(function(d){return yScale(d.average);});
+                
+                // Genera linea de peligro.bold
+                var dangerLine = d3.line()
+                                    // 350 partes por millon (mismo) se considera peligroso
+                                    .defined(function(d){ return d.average>=350;})
+                                    .x(function(d){return xScale(d.date);}) 
+                                    .y(function(d){return yScale(d.average);});
+                // Crea SVG
+                var svg = d3.select("body")
+                            .append("svg")
+                            .attr("width", w)
+                            .attr("height", h);
+                
+                // Dibuja linea
+                svg.append("path")
+                    .datum(dataset)
+                    .attr("class", "line")
+                    .attr("d", line);
+
+                // Dibuja linea de peligro
+                svg.append("path")
+                    .datum(dataset)
+                    .attr("class", "line danger")
+                    .attr("d", dangerLine);
+
+                // Dibuja ejes
+                svg.append("g")
+                    .attr("class", "axis")  //Assign "axis" class
+                    .attr("transform", "translate(0," + (h - padding) + ")") // De esta forma lo 
+				    .call(xAxis);                                            // "empujamos" al fondo
+        
+                svg.append("g")
+                    .attr("class", "axis")  //Assign "axis" class
+                    .attr("transform", "translate(" + padding + ",0)")
+				    .call(yAxis); 
+
+                // Dibuja linea discontinua
+                svg.append("line")
+                    .attr("class", "line safeLevel")
+                    .attr("x1", padding)
+                    .attr("x2", w)
+                    .attr("y1", yScale(350))
+                    .attr("y2", yScale(350));
+
+                // Dibuja texto
+                svg.append("text")
+                    .attr("class", "dangerLabel")
+                    .attr("x", padding + 20)
+                    .attr("y", yScale(350)-10)
+                    .text("350 ppm (partes por millón) de Co2");
+            });
+        </script>
+    </body>
+</html>
+

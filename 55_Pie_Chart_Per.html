@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Pie Chart Layout CSV with Percentage</title>
+        <script type="text/javascript" src='https://d3js.org/d3.v5.min.js'></script>
+        <style type = "text/css">
+            text {
+                font-family: sans-serif;
+                font-size: 12px;
+                fill: white;
+            }
+        </style>
+    </head>
+    <body>
+        <script type="text/javascript">
+
+        // Width and Height
+        var w = 300;
+        var h = 300;
+        var dataset;
+
+        // Colores
+        var color = d3.scaleOrdinal(d3.schemeCategory10);
+        
+        // Formato
+        var percentageFormat = d3.format("%");
+        
+        // Pie Layout
+        var pie = d3.pie()
+                .value(function(d){ 
+                        return d.value;
+                    });
+        
+        // Por si nos gustan mas los donuts que las tartas
+        var outerRadius = w/2;
+        var innerRadius = 0;  
+
+        // Arc Layout
+        var arc = d3.arc()
+                    .innerRadius(innerRadius)
+                    .outerRadius(outerRadius);  
+        
+        // Row Conversion
+            var rowConverter = function(d){
+                return{
+                    date: +d.year,
+                    // Convierto de string a float
+                    average: parseFloat(d.average)
+                };
+            }
+
+        d3.csv("http://127.0.0.1:8080/mauna_loa_co2_monthly_averages.csv", rowConverter).then(function(csv_data) {
+   
+            var data = d3.nest()
+                        .key(function(d){
+                            return d.date;
+                        })
+                        .rollup(function(d){
+                            return d3.sum(d, function(g){
+                                return g.average;
+                            });
+                        })
+                        .entries(csv_data);
+            
+            // Valor total
+            var total = d3.sum(data, function(d) { 
+                return d.value; 
+            });            
+
+            console.log(total);
+
+            data.forEach(function(d,i){
+                d.percentage = d.value/total;
+            });
+
+            console.log("data variable", data);
+            console.log("pie(data)", pie(data));
+
+            // Crea SVG
+            var svg = d3.select("body")
+                        .append("svg")
+                        .attr("width", w)
+                        .attr("height", h);        
+
+            //  Define arcos
+            var arcs = svg.selectAll("g.arc")
+                        .data(pie(data))
+                        .enter()
+                        .append("g")
+                        .attr("class", "arc")
+                        .attr("transform", "translate("+outerRadius+", "+outerRadius+")");         
+        
+            // Pinta arcos
+            arcs.append("path")
+                .attr("fill", function(d,i){
+                    return color(i);
+                })
+                .attr("d", arc);
+            
+            // Pinta texto
+            arcs.append("text")
+                .attr("transform", function(d){
+                    return "translate(" + arc.centroid(d) + ")";
+                })
+                .attr("text-anchor", "middle")
+                .text(function(d){
+                    console.log(d.data.key)
+                    return percentageFormat(d.data.percentage);
+                });
+            
+        });        
+        </script>
+    </body>
+</html>

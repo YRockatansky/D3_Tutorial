@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Line Chart</title>
+        <script type="text/javascript" src='https://d3js.org/d3.v5.min.js'></script>
+        <style type="text/css">
+            /* Pues eso, una linea */
+			.line {
+				fill: none;
+				stroke: teal;
+				stroke-width: 0.5;
+			}
+
+		</style>
+    </head>
+    <body>
+        <script type="text/javascript">
+            // Width and height
+			var w = 800;
+			var h = 300;
+			var padding = 40;
+			
+			var dataset, xScale, yScale, xAxis, yAxis, line;  // De momento vacios
+            
+            // Para convertir el dato Dates a un string
+            var formatTime = d3.timeFormat("%Y");
+            var formatCO2 = d3.format(",");
+
+            // Row Conversion
+            var rowConverter = function(d){
+                return{
+                    // Objeto de fecha: año + mes
+                    date: new Date(+d.year, (+d.month - 1)),
+                    // Convierto de string a float
+                    average: parseFloat(d.average)
+                };
+            }
+
+            /* 
+            * Observa amigo que al mes le resto uno, eso es debido
+            * a que JavaScript cuenta los meses desde cero (0 = Enero)
+            * mientras que en el CSV estan empezando desde uno
+            */
+
+            // Cargo el CSV
+            d3.csv("http://127.0.0.1:8080/mauna_loa_co2_monthly_averages.csv", rowConverter).then(function(data) {
+                
+                var dataset = data;
+
+                // Mostramos en consola para verificacion
+                //console.table(dataset, ["date", "average"]);
+
+                // Escala
+                xScale = d3.scaleTime()
+                            .domain([
+                                d3.min(dataset, function(d){return d.date;}),
+                                d3.max(dataset, function(d){return d.date;})
+                            ])
+                            .range([padding,w]);
+                yScale = d3.scaleTime()
+                            .domain([0, d3.max(dataset, function(d){return d.average;})])
+                            .range([h-padding,0]);
+
+                // Ejes
+                var xAxis = d3.axisBottom() // Donde van a aparecer las etiquetas
+                                .scale(xScale)
+                                .tickFormat(formatTime)
+                                .ticks(10); // Numero de marcadores (divisores)
+                                ;
+
+                var yAxis = d3.axisLeft() 
+                                .scale(yScale)
+                                .tickFormat(formatCO2)
+                                .ticks(10);
+                
+                // Genera linea
+                var line = d3.line()
+                            .x(function(d){return xScale(d.date);})
+                            .y(function(d){return yScale(d.average);});
+
+                // Crea SVG
+                var svg = d3.select("body")
+                            .append("svg")
+                            .attr("width", w)
+                            .attr("height", h);
+                
+                // Dibuja linea
+                svg.append("path")
+                    .datum(dataset)
+                    .attr("class", "line")
+                    .attr("d", line);
+
+                /*
+                * Oye, oye, oye, ¿Donde estan selectAll/data/enter/append?
+                * Pues se ve que con datum() se obtienen los datos enlazados,
+                * en este caso es mejor asi siendo solamente una linea
+                *
+                * Cuidado, que este metodo no computa union, por tanto
+                *  no computa .enter ni .exit
+                */
+
+                // Dibuja ejes
+                svg.append("g")
+                    .attr("class", "axis")  //Assign "axis" class
+                    .attr("transform", "translate(0," + (h - padding) + ")") // De esta forma lo 
+				    .call(xAxis);                                            // "empujamos" al fondo
+        
+                svg.append("g")
+                    .attr("class", "axis")  //Assign "axis" class
+                    .attr("transform", "translate(" + padding + ",0)")
+				    .call(yAxis); 
+            });
+        </script>
+    </body>
+</html>
+

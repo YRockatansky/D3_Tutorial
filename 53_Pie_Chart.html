@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Pie Chart Layout</title>
+        <script type="text/javascript" src='https://d3js.org/d3.v5.min.js'></script>
+        <style type = "text/css">
+            text {
+                font-family: sans-serif;
+                font-size: 12px;
+                fill: white;
+            }
+        </style>
+    </head>
+    <body>
+        <script type="text/javascript">
+
+        // Width and Height
+        var w = 300;
+        var h = 300;
+
+        var dataset = [ 5, 10, 20, 45, 6, 25 ];
+
+        // Pie Layout
+        var pie = d3.pie();
+
+        // Colores
+        var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+        // Por si nos gustan mas los donuts que las tartas
+        var outerRadius = w/2;
+        var innerRadius = 0;
+
+        var arc = d3.arc()
+                    .innerRadius(innerRadius)
+                    .outerRadius(outerRadius);    
+
+        // SVG
+        var svg = d3.select("body")
+                    .append("svg")
+                    .attr("width", w)
+                    .attr("height", h);        
+
+        //  Define arcos
+        var arcs = svg.selectAll("g.arc")
+                    .data(pie(dataset))
+                    .enter()
+                    .append("g")
+                    .attr("class", "arc")
+                    .attr("transform", "translate("+outerRadius+", "+outerRadius+")");         
+        
+        // Pinta arcos
+        arcs.append("path")
+            .attr("fill", function(d,i){
+                return color(i);
+            })
+            .attr("d", arc);
+        
+        /*
+        * What? Que es eso? Donde esta la function (d,i)?
+        * Ah vale, que es equivalente a esto:
+
+            .attr("d", function(d, i) {
+                return arc(d, i);
+            });
+
+        * Que cosas, no?
+        */
+
+        // Pinta texto
+        arcs.append("text")
+            .attr("transform", function(d){
+                return "translate(" + arc.centroid(d) + ")";
+            })
+            .attr("text-anchor", "middle")
+            .text(function(d){
+                return d.value;
+            });
+
+        </script>
+    </body>
+</html>

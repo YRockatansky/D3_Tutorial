@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Scatter Chart Axes</title>
+        <script type="text/javascript" src='https://d3js.org/d3.v5.min.js'></script>
+        <style type="text/css">
+			/* No style rules here yet */
+		</style>
+    </head>
+    <body>
+        <script type="text/javascript">
+
+            // Formateo de las etiquetas de marcadores
+
+            var formatAsPercentage = d3.format(".1%");
+
+            // Coordenadas de los puntos
+            
+           
+            var dataset = [
+                          [ 5,     20 ],
+                          [ 480,   90 ],
+                          [ 250,   50 ],
+                          [ 100,   33 ],
+                          [ 330,   95 ],
+                          [ 410,   12 ],
+                          [ 475,   44 ],
+                          [ 25,    67 ],
+                          [ 85,    21 ],
+                          [ 220,   88 ],
+                          [ 600,   150]
+                            // Le añado otro punto para comprobar
+                        ];               // que la grafica se escala 
+            
+            /*
+            // Dynamic, random dataset
+            var dataset = [];
+            var numDataPoints = 50;
+            var xRange = Math.random() * 1000;
+            var yRange = Math.random() * 1000;
+
+            for (var i = 0; i < numDataPoints; i++) {
+                var newNumber1 = Math.round(Math.random() * xRange);
+                var newNumber2 = Math.round(Math.random() * yRange);
+                dataset.push([newNumber1, newNumber2]);
+            }
+            */
+            //Width and height
+            var w = 500;
+            var h = 300; // Puedes probar a poner 300 para cambiar la escala vertical
+            var padding = 30; // Relleno: Borde para corregir los elementos que aparecen cortados
+            // Tambien es recomendable utilizar variables separadas de padding (xPaddingy, yPadding)
+
+            // Area SVG
+            var svg = d3.select("body")
+                       .append("svg")
+                       .attr("width",w)
+                       .attr("height", h);
+
+            
+            // Escala (Con parametros preestablecidos)
+            /*
+            var scale = d3.scale.linear()
+                            .domain([100, 500]) // Dominio de entrada
+                            .range([10, 350]); // Rango de salida
+            */
+
+            // Escala parametrizable
+            var xScale = d3.scaleLinear() // El rango va de 5 a 480
+                            .domain([0, d3.max(dataset, function(d){ // El mayor es 480
+                                return d[0]; // Valor de los puntos del eje X
+                            })])
+                            .range([padding, w - padding*2]); // Añade unos bordes con padding
+                            //.nice() // Nos sirve para redondear los valores muy tochos
+                            
+            var yScale = d3.scaleLinear() // E rango va de 12 a 95
+                            .domain([0, d3.max(dataset, function(d){ // El mayor es 95
+                                return d[1]; // Valor de los puntos del eje Y
+                            })])
+                            .range([h - padding, padding]); // Hemos cambiado el rango de salida para que
+                                            // los numeros inferiores aparezcan abajo
+           
+           var rScale = d3.scaleSqrt() 
+                            .domain([0, d3.max(dataset, function(d) {
+                                 return d[1]; })])
+                            .range([0, 5]); // Establece un rango de 0 a 5 en el radio
+           
+
+            // Ejes
+
+            var xAxis = d3.axisBottom() // Donde van a aparecer las etiquetas
+                                .scale(xScale)
+                                .tickFormat(formatAsPercentage)
+                                .ticks(5); // Numero de marcadores (divisores)
+                                // D3 va a poner 7 para que quede mejor
+
+            var yAxis = d3.axisLeft() // Donde van a aparecer las etiquetas
+                                .scale(yScale)
+                                .tickFormat(formatAsPercentage)
+                                .ticks(5); // Numero de marcadores (divisores)  
+                                            
+            // Dibuja Puntos
+            svg.selectAll("circle")
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d){
+                    return xScale(d[0]); // Primer valor del bloque
+                })
+                .attr("cy", function(d){
+                    return yScale(d[1]); // Segundo valor del bloque
+                })
+                .attr("r", function(d){
+                    return rScale(d[1]);
+                });
+            
+
+            /*
+            // Dibuja Coordenadas (Texto)
+            svg.selectAll("rect")
+                .data(dataset)
+                .enter()
+                .append("text")
+                .text(function(d) {
+                    return d[0] + "," + d[1];
+                })
+                .attr("x", function(d) {
+                    return xScale(d[0]);
+                })
+                .attr("y", function(d) {
+                    return yScale(d[1]);
+                })
+                .attr("font-family", "sans-serif")
+                .attr("font-size", "11px")
+                .attr("text-anchor", "middle")
+                .attr("fill", "red");
+            */
+
+
+            // Dibuja Ejes
+
+            svg.append("g")
+                .attr("class", "axis")  //Assign "axis" class
+                .attr("transform", "translate(0," + (h - padding) + ")") // De esta forma lo 
+				.call(xAxis);                                            // "empujamos" al fondo
+        
+            svg.append("g")
+                .attr("class", "axis")  //Assign "axis" class
+                .attr("transform", "translate(" + padding + ")")
+				.call(yAxis); 
+        </script>
+    </body>
+</html>

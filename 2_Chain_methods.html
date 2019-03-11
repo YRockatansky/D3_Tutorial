@@ -1,0 +1,22 @@
+<html>
+    <head>
+        <title>Chain Methods</title>
+    </head>
+
+    <body>
+        <script src='https://d3js.org/d3.v5.min.js'></script>
+
+        <script>
+            // Escribe aqui amigo
+            d3.select("body")
+                .append("p")
+                .text("First paragraph");
+
+            // Esquema sin encadenamientos
+            var body = d3.select("body");
+            var q = body.append("q");
+            q.text("Second paragraph");
+        </script>
+    </body>
+
+</html>

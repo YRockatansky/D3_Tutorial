@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Pie Chart Layout CSV with Date</title>
+        <script type="text/javascript" src='https://d3js.org/d3.v5.min.js'></script>
+        <style type = "text/css">
+
+            h1.title {
+                font-family: Helvetica;
+                width: 600px;
+                font-size: 25px;
+                text-align: center;
+            }
+            p.subtitle {
+                font-family: Helvetica;
+                width: 600px;
+                font-size: 18px;
+                text-align: center;
+            }
+            p.end {
+                position: absolute;
+                font-size: 10px;
+                bottom: 1px;
+                width: 40%;
+            }
+            text {
+                font-family: Helvetica;
+                font-size: 12px;
+                fill: black;
+            }
+
+        </style>
+    </head>
+    <body>
+        <h1 class="title">Mauna Loa Observatory - Hawaii</h1>
+        <p class="subtitle">Trends in Atmospheric Carbon Dioxide per Decade</h1>
+
+        <script type="text/javascript">
+
+        // Width and Height
+        var w = 1200;
+        var h = 1200;
+        var dataset;
+
+        // Colores
+        var color = d3.scaleOrdinal(d3.schemeSet2);
+
+        // Dimensiones leyenda
+        var legendRectSize = 25; 
+        var legendSpacing = 5; 
+        
+        // Formato
+        var percentageFormat = d3.format("%");
+        
+        // Pie Layout
+        var pie = d3.pie()
+                .value(function(d){ 
+                        return d.value;
+                    });
+        
+        // Por si nos gustan mas los donuts que las tartas
+        var outerRadius = w/4;
+        var innerRadius = 0;  
+
+        // Arc Layout
+        var arc = d3.arc()
+                    .innerRadius(innerRadius)
+                    .outerRadius(outerRadius);  
+        
+        // Row Conversion
+            var rowConverter = function(d){
+                return{
+                    date: +d.year,
+                    // Convierto de string a float
+                    average: parseFloat(d.average)
+                };
+            }
+
+        d3.csv("http://127.0.0.1:8080/mauna_loa_co2_monthly_averages.csv", rowConverter).then(function(csv_data) {
+   
+            var data = d3.nest()
+                        .key(function(d){
+                            if(d.date>=1950 && d.date<=1960){
+                                return 1950;
+                            }
+                            if(d.date>=1960 && d.date<=1970){
+                                return 1960;
+                            }
+                            if(d.date>=1970 && d.date<=1980){
+                                return 1970;
+                            }
+                            if(d.date>=1980 && d.date<=1990){
+                                return 1980;
+                            }
+                            if(d.date>=1990 && d.date<=2000){
+                                return 1990;
+                            }
+                            if(d.date>=2000 && d.date<=2010){
+                                return 2000;
+                            }
+                            if(d.date>=2010 && d.date<=2020){
+                                return 2010;
+                            }
+                            
+                        })
+                        .rollup(function(d){
+                            return d3.sum(d, function(g){
+                                return g.average;
+                            });
+                        })
+                        .entries(csv_data);
+            
+            // Valor total
+            var total = d3.sum(data, function(d) { 
+                return d.value; 
+            });            
+
+            console.log(total);
+
+            data.forEach(function(d,i){
+                d.percentage = d.value/total;
+            });
+
+            console.log("data variable", data);
+            console.log("pie(data)", pie(data));
+
+            // Crea SVG
+            var svg = d3.select("body")
+                        .append("svg")
+                        .attr("width", w)
+                        .attr("height", h);        
+
+            //  Define arcos
+            var arcs = svg.selectAll("g.arc")
+                        .data(pie(data))
+                        .enter()
+                        .append("g")
+                        .attr("class", "arc")
+                        .attr("transform", "translate("+outerRadius+", "+outerRadius+")");                 
+
+            // Pinta arcos
+            arcs.append("path")
+                .attr("fill", function(d,i){
+                    return color(i);
+                })
+                .attr("d", arc);
+                           
+            // Define Leyenda
+            var legend = svg.selectAll("g.legend") 
+                    .data(pie(data))
+                    .enter() 
+                    .append("g") 
+                    .attr("class", "legend") 
+                    .attr("transform", function(d, i) {                   
+                        var height = legendRectSize + legendSpacing;     
+                        var x = 25 * legendRectSize; 
+                        var y = i * height + 10;            
+                        return "translate(" + x + "," + y + ")";    
+                    });
+            
+            // Dibuja Leyenda
+            legend.append("rect")                                 
+                    .attr("width", legendRectSize)                      
+                    .attr("height", legendRectSize)                      
+                    .attr("fill", function(d,i){
+                        return color(i);
+                    })
+                    .style("stroke", function(d,i){
+                        return color(i);
+                    });
+            
+            console.log(data.percentage)
+
+            // Pinta texto
+            legend.append("text")                                    
+                .attr("x", legendRectSize + legendSpacing)
+                .attr("y", legendRectSize - legendSpacing -2)            
+                .text(function(d) { 
+                    return d.data.key; 
+                });
+        
+        });        
+        </script>
+    </body>
+    <p class="end">March 1958 - January 2017</p>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>SVG Circles and Boxes</title>
+		<script type="text/javascript" src='https://d3js.org/d3.v5.min.js'></script>
+		<style type="text/css">
+			/* No style rules here yet */		
+		</style>
+	</head>
+	<body>
+		<script type="text/javascript">
+			
+			//Width and height
+            var w = 500;
+            var h = 500;
+
+			//Data
+			var sandias = [5, 10, 15, 20, 25];
+			var baules = [5, 10, 15, 20, 25];
+
+			//Creamos sandias
+            var svg = d3.select("body")
+                        .append("svg")
+                        .attr("width", w)
+                        .attr("height", h);
+			
+			var circles = svg.selectAll("circle")
+							.data(sandias)
+							.enter()
+							.append("circle");
+			
+			circles.attr("cx", function(d, i){
+						return (i*50)+25;
+					})
+					.attr("cy", h/20 + 5)
+					.attr("r", function(d){
+						return d;
+					})
+					.attr("fill", "red")
+					.attr("stroke", "green")
+					.attr("stroke-width", 5);
+			
+			// Creamos baules
+			var rectangles = svg.selectAll("rect")
+							.data(baules)
+							.enter()
+							.append("rect");
+			
+			rectangles.attr("x", function(d, i){
+						return (i*50)+25;
+					})
+					.attr("y", h/4)
+					.attr("width", function(d){
+						return d+20;
+					})
+					.attr("height", function(d){
+						return d;
+					})
+					.attr("fill", "brown")
+					.attr("stroke", "black")
+					.attr("stroke-width", 5);
+		</script>
+	</body>
+</html>

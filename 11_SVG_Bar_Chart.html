@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>SVG Bar Chart</title>
+        <script type="text/javascript" src='https://d3js.org/d3.v5.min.js'></script>
+        <style type="text/css">
+			div.bar {
+				display: inline-block;
+				width: 20px;
+				height: 75px;
+                margin-right: 2px;
+				background-color: teal;
+			}
+		</style>
+    </head>
+    <body>
+        <script type="text/javascript">
+            // Vamos a utilizar SVG para dibujar el diagrama de barras
+
+            var dataset = [ 5, 10, 13, 19, 21, 25, 22, 18, 15, 13,
+            11, 12, 15, 20, 18, 17, 16, 18, 23, 25 ];
+
+            //Width and height
+
+            var w = 500;
+            var h = 100;
+            var barPadding = 1; // Para dejar un espacio entre cada barra
+            var escala = 4; // Para cambiar la altura de las barras
+
+            var svg = d3.select("body")
+                       .append("svg")
+                       .attr("width",w)
+                       .attr("height", h);
+
+            svg.selectAll("rect")
+                .data(dataset)
+                .enter()
+                .append("rect")
+                .attr("x", function(d,i){
+                    return i*(w/dataset.length); // Define la posicion donde empieza cada barra
+                })
+                .attr("y", function(d){
+                    return h - (d*escala); // De esta manera empieza a dibujar las barras desde abajo
+                })                                                         
+                .attr("width",w/dataset.length-barPadding) // Hacemos la anchura parametrizable al numero  
+                .attr("height", function(d){               // de datos (Deja un espacio entre cada barra)
+                    return d*escala; // Para que la altura de la barra se corresponda al dato
+                })
+                .attr("fill", function(d){
+                    return "rgb(0, 0, " + (d * 10) + ")"; // Se aproxima al azul segun 
+                });                                       // lo mayor que sea el dato
+        
+        svg.selectAll("text")
+            .data(dataset)
+            .enter()
+            .append("text")
+            .text(function(d) {
+                return d;
+            })
+            .attr("x", function(d,i){ // Calcula la posicion x para centrar el texto
+                return i*(w/dataset.length) + (w/dataset.length-barPadding)/2; 
+            })                        // Asigna el borde izquierdo mas la mitad del ancho de la barra
+            .attr("y", function(d){
+                return h - (d*escala)+15; // De esta manera empieza a dibujar las barras desde abajo
+            })
+            .attr("font-family", "sans-serif")
+            .attr("font-size", "11px")
+            .attr("text-anchor", "middle")
+            .attr("fill", "white");
+        </script>
+    </body>
+</html>
