@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Pie Chart Layout CSV with Tooltip</title>
+        <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+        <style type = "text/css">
+
+        body {
+            font-family: "Open Sans", sans-serif;
+        }
+        .title-holder {
+            text-align: center;
+        }
+        .title {
+            font-family: "Lato", sans-serif;
+        }
+        .subtitle {
+            font-size: 20px;
+        }
+        .font {
+            font-size: 18px;
+        }
+
+        /* legend */
+        .legend {
+            font-size: 14px;
+        }
+        rect {
+            cursor: pointer; 
+            stroke-width: 2;
+        }
+        rect.disabled {
+            fill: transparent !important;
+        }
+
+        /* chart */
+        #chart {
+            height: 800px;
+            margin: 0 auto;
+            position: relative;
+            display: block;
+            width: 1200px;
+        }
+        
+        .drop-label {
+            float: right;
+        }
+
+        .range-label {
+            float: right;  
+        }
+        .range-button {
+            float: right;  
+            padding-left: 5px;
+        }
+
+        /* tooltip */
+        .tooltip {
+            background: #eee;
+            box-shadow: 0 0 5px #999999;
+            color: #333;
+            display: none;
+            font-size: 18px;
+            left: 130px;
+            padding: 10px;
+            position: absolute;
+            text-align: center;
+            top: 95px;
+            width: 120px;
+            z-index: 10;
+        }
+
+        /* table */
+        .tg  {border-collapse:collapse;border-spacing:0;border-color:#ccc;}
+        .tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#ccc;color:#333;background-color:#fff;}
+        .tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:1px;overflow:hidden;word-break:normal;border-color:#ccc;color:#333;background-color:#f0f0f0;}
+        .tg .tg-s268{text-align:center}
+        .tg .tg-0lax{text-align:center;vertical-align:top}
+
+        </style>
+    </head>
+    <body>
+    
+        <div class="title-holder">
+            <h1 class="title">Quantification of MRI-PDFF</h1>
+            <p class="subtitle">Proton Density Fat Fraction (PDFF) Mean</p>
+            <p class="font">Uncheck labels to recalculate.</p>
+        </div>
+        
+        <div id="chart">
+            <p class="drop-label">Choose grade:
+                <select id="label-option">
+                        <option value="Normal">None</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Mild">Mild</option>
+                        <option value="Moderate">Moderate</option>
+                </select>
+            </p>
+    
+            <table class="tg">
+                <tr>
+                <td class="tg-s268"></td>
+                <td class="tg-0lax">Normal</td>
+                <td class="tg-0lax">Mild</td>
+                <td class="tg-0lax">Moderate</td>
+                <td class="tg-0lax">Severe</td>
+                </tr>
+                <tr>
+                <td class="tg-0lax">Default</td>
+                <td class="tg-0lax">0 - 3.72</td>
+                <td class="tg-0lax">3.72 - 5.43</td>
+                <td class="tg-0lax">5.43 - 9.11</td>
+                <td class="tg-0lax">&gt; 9.11</td>
+                </tr>
+            </table>
+            
+            <p class="range-button">
+                <input type="submit" id="submit" value="Submit" />
+                <input type="reset" id="restart" value="Restart" />
+            </p>
+            
+            <p class="range-label">Specify range:
+                <input type="number" onfocus="this.value=''" id="num1">
+                <input type="number" onfocus="this.value=''" id="num2">
+            </p>
+            
+        </div> <!--Tambien se puede trabajar asi-->
+
+        <script type="text/javascript">
+
+        var width = 1200;
+        var height = 800;
+
+        // Rangos
+        var nor1 = 0, nor2 = 3.72;
+        var mil1 = nor2, mil2 = 5.43;
+        var mod1 = mil2, mod2 = 9.11;
+        // Los he sacado de aqui para que parezcan creibles
+        // http://www.ijcem.com/files/ijcem0051721.pdf
+            
+        // Hay quien prefiere un donut a una tarta
+        var radius = (Math.min(width, height) / 2) - 10;
+        var donut = 0;
+
+        // Leyenda
+        var legendRectSize = 25; // Tamaño cuadrados
+        var legendSpacing = 6; // Espacio entre cuadrados
+
+        var color = d3.scaleOrdinal(d3.schemeSet3);
+
+        updateDataset();
+        
+        // Dropdown Update
+        var dropdown = d3.select("#label-option").on("change", change);
+
+        function change() {
+            var selected = d3.select("#label-option").node().value;
+            if (selected == "Normal"){
+                updateNor();
+                submit();   
+            }  
+            if (selected == "Mild"){
+                updateMil();
+                submit();
+            } 
+            if (selected == "Moderate"){
+                updateMod();
+                submit();
+            }
+        }
+    
+        // Update Ranges
+        function updateNor() {
+            d3.select("#num1").on("input", function(){
+                if(this.value>=0) return nor1=this.value;
+            })
+            d3.select("#num2").on("input", function(){
+                if(this.value>=0) return nor2=mil1=this.value;
+            })
+        }
+        function updateMil() {
+            d3.select("#num1").on("input", function(){
+                if(this.value>=0) return mil1=this.value;
+            })
+            d3.select("#num2").on("input", function(){
+                if(this.value>=0) return mil2=mod1=this.value;
+            })
+        }
+        function updateMod() {
+            d3.select("#num1").on("input", function(){
+                if(this.value>=0) return mod1=this.value;
+            })
+            d3.select("#num2").on("input", function(){
+                if(this.value>=0) return mod2=this.value;
+            })
+        }
+        
+        // Submit Button
+        function submit() {
+            d3.select("#submit").on("click", function(){
+                d3.selectAll("path").transition()
+                                    .duration(750)
+                                    .attr("d", arc_del);
+                
+                setTimeout(function(){d3.select("svg").remove();}, 1000);
+                setTimeout(function(){updateDataset();}, 1000);
+                
+            });
+        }
+
+        // Restart Button
+        d3.select("#restart").on("click", function() {
+            nor1 = 0, nor2 = 3.72;
+            mil1 = nor2, mil2 = 5.43;
+            mod1 = mil2, mod2 = 9.11;
+            d3.selectAll("path").transition()
+                                .duration(750)
+                                .attr("d", arc_del);
+            
+            setTimeout(function(){d3.select("svg").remove();}, 1000);
+            setTimeout(function(){updateDataset();}, 1000);
+        })
+
+        var arc_del = d3.arc()
+                .innerRadius(0)
+                .outerRadius(1);
+
+        function updateDataset() {
+            // Invoco al CSV
+            d3.csv("http://127.0.0.1:8080/Liver_Fat_Iron_Concentration.csv").then(function(data) {
+            
+            // Incluyo los datos de entrada en un bloque
+            var dataset = d3.nest()
+                            .key(function(d){
+                                if(d.FatFractionMean>=nor1 && d.FatFractionMean<=nor2){
+                                    return "Normal";
+                                }
+                                if(d.FatFractionMean>=mil1 && d.FatFractionMean<=mil2){
+                                    return "Mild";
+                                }
+                                if(d.FatFractionMean>=mod1 && d.FatFractionMean<=mod2){
+                                    return "Moderate";
+                                } else return "Severe";
+                            })
+                            .rollup(function(d){
+                                return d3.sum(d, function(g){
+                                    return g.FatFractionMean;
+                                });
+                            })
+                            .entries(data);
+            
+            // Duplicamos los datos (Solo para que coincida con el nombre del CSV)
+            dataset.forEach(function(d) {
+                d.label = d.key;
+                d.count = d.value;
+                d.enabled = true; // Propiedad "enabled" 
+            });
+
+            //console.log("data variable", dataset);
+
+            // Creo el SVG
+            var svg = d3.select("#chart") // Selecciona el elemento "chart" en el DOM
+                .append("svg") // Adjunta el elemento SVG
+                .attr("width", width) 
+                .attr("height", height) 
+                .append("g") // Adjunta elemento "g" (Contenedor) al SVG
+                .attr("transform", "translate(" + (width / 2) + "," + (height / 2) + ")"); // Centramos el "g" al SVG
+
+            // Defino los arcos
+            var arc = d3.arc()
+                .innerRadius(donut)
+                .outerRadius(radius);
+
+            // Otro arco para la animacion
+            var arc_m = d3.arc()
+                .innerRadius(donut)
+                .outerRadius(radius+10);
+
+            // Defino el Pie Chart
+            var pie = d3.pie() 
+                .value(function(d) { return d.count; }) // Introdzuco los datos numericos
+                .sort(null); // Por defecto, los datos se ordenan en valor descendente
+                            // Para no arruinar la animacion lo dejaremos en null
+
+            // Defino el Tooltip
+            var tooltip = d3.select("#chart") // Selecciona el elemento "chart" en el DOM
+                .append("div") // Adjunto un elemento DIV a lo que hemos seleccionado                                  
+                .attr("class", "tooltip"); // Incluye la clase "tooltip" al elemento DIV
+
+            tooltip.append("div") // Incluye otro DIV al tooltip definido                           
+                .attr("class", "label"); // Incluye la clase "label" a la seleccion                         
+
+            tooltip.append("div")                   
+                .attr("class", "count");              
+
+            tooltip.append("div")
+                .attr("class", "percent");
+
+            // Definimos el Path
+            var path = svg.selectAll("path") // Selecciona tooodos los elementos que estan dentro del SVG, especificamente el contenedor "g". Los que no existen se crearan mas adelante
+                .data(pie(dataset)) // Usamos la magia para extraer los valores y asociarlos al Path
+                .enter() // Crea los marcadores par cada valor
+                .append("path") // Y los sustituye con elementos del path
+                .attr("d", arc) // define d attribute with arc function above
+                .attr("fill", "white");
+
+                path.transition().delay(function(d, i) { return i * 500; }).duration(500)
+                    .attrTween("d", function(d) {
+                            var i = d3.interpolate(d.startAngle, d.endAngle);
+                            return function(t) {
+                                d.endAngle = i(t);
+                                return arc(d);
+                            };
+                        })
+                    .attr("fill", function(d) { return color(d.data.label); })
+                    .each(function(d) { this._current - d; }); // Almacena los angulos iniciales (arcos)
+
+            // Event Listener
+            path.on("mouseover", function(d) {
+                /*
+                d3.select(this)      
+                    .transition()       // Cuando el raton pasa por encima  
+                    .attr("d", arc_m);  // cambia ligeramente el radio
+                */
+                var total = d3.sum(dataset.map(function(d) { // Calcula el total de valores         
+                    return (d.enabled) ? d.count : 0; // Comprueba si la entrada (el dato) esta habilidada
+                    //  Si no es asi, devuelve un 0 para que aumenten los otros porcentajes                                
+                }));  
+
+                //console.log("total", total); 
+
+                var percent = Math.round(1000 * d.data.count / total) / 10;
+
+                var grade;
+
+                if(d.data.label=="Normal"){
+                    grade = nor1+" - "+nor2;
+                }
+                if(d.data.label=="Mild"){
+                    grade = mil1+" - "+mil2;
+                }
+                if(d.data.label=="Moderate"){
+                    grade = mod1+" - "+mod2;
+                }
+                if(d.data.label=="Severe"){
+                    grade = "> "+mod2;
+                }
+                                
+                tooltip.select(".label").html(d.data.label); // Indica el el texto         
+                tooltip.select(".count").html(grade);   
+                tooltip.select(".percent").html(percent + "%"); // y el porcentaje         
+                tooltip.style("display", "block"); // Muestra el Tooltip                  
+
+            });                                                           
+
+            path.on("mouseout", function() { 
+                /*
+                d3.select(this)      
+                    .transition()    // Cuando el raton se quita
+                    .attr("d", arc); // delvueve el tamaño original
+                */
+                tooltip.style("display", "none"); // Oculta el Tooltip
+
+            });
+
+            path.on("mousemove", function(d) { // Cuando el raton se desplaza por encima                  
+                tooltip.style("top", (d3.event.layerY + 10) + "px") // La posicion del cuadro esta 10px abajo 
+                    .style("left", (d3.event.layerX + 10) + "px"); // y a la derecha del cursor
+                    // Esta chulo, eh? 
+            });
+
+            // Define la leyenda
+            var legend = svg.selectAll(".legend") // Selecciona todos los elementos de la clase "legend"
+                .data(color.domain()) // Lo atribuye a cada etiqueta (texto) del dataset
+                .enter() 
+                .append("g") 
+                .attr("class", "legend") // Cada elemento g se le atribuye la clase "legend"
+                .attr("transform", function(d, i) {                   
+                    var height = legendRectSize + legendSpacing;
+                    var offset =  height * color.domain().length / 2; 
+                    // Corregimos la posicion vertical con la altura de un elemento por la mitad del numero total de elementos
+                    //console.log("offset", offset); 
+
+                    var horz = 18 * legendRectSize; // Lo situamos horizontalmente un poco a ojimetro
+                    var vert = i * height - offset; // La posicion ira dependiendo segun el indice del elemento actual (i)              
+                    return "translate(" + horz + "," + vert + ")";        
+                });
+
+            // Dibuja la leyenda
+            legend.append("rect")                                 
+                .attr("width", legendRectSize)             
+                .attr("height", legendRectSize)           
+                .style("fill", color) 
+                .style("stroke", color) 
+                // Event Listener
+                .on("click", function(label) {
+                    var rect = d3.select(this); // "this" indica donde se ha clicado
+                    var enabled = true; // Propiedad "enabled" predeterminada
+                    var totalEnabled = d3.sum(dataset.map(function(d) { // Devuelve 1 si 
+                        return (d.enabled) ? 1 : 0; // la entrada (el rectangulo) esta activa
+                    }));
+                    
+                    //console.log("totalEnabled", totalEnabled);
+                    
+                    if (rect.attr("class") === "disabled") { // Si rect.disabled
+                        rect.attr("class", ""); // Elimina la clase disabled
+                    } else {
+                        if (totalEnabled < 2) return; // Si quedan menos de 2 salimos
+                        rect.attr("class", "disabled"); // Si no es asi, añade la clase .disabled
+                        enabled = false; // y la propiedad "enabled" a false
+                    }
+
+                    pie.value(function(d) { 
+                        if (d.label === label) d.enabled = enabled; // Si la etiqueta de entrada coincide con la etiqueta 
+                                                                    // de leyenda actualiza la propiedad "enabled"
+                        return (d.enabled) ? d.count : 0; // Indica el valor o un cero en funcion de si esta "enabled"
+                    });
+
+                    //console.log(pie(dataset));
+
+                    path = path.data(pie(dataset)); // Actualiza el valor de la tarta
+
+                    // Redibujamos el Pie Chart
+                    path.transition()
+                        .duration(750)
+                        // http://bl.ocks.org/mbostock/5100636 A ver como va esto
+                        // attrTween va asociado a la animacion del arco, nos sirve para hacer la transicion 
+                        // del angulo del arco actual a un nuevo angulo
+                        .attrTween("d", function(d) { // "d" especifica el atributo d que se esta animando
+                            // interpolate devuelve un argumento t, que cuando es 0, devuelve en este caso this y cuando es 1
+                            // devuelve d. Si el valor se encuentra entre 0 y 1 devuelve un valor intermedio (between->tween)
+                            var interpolate = d3.interpolate(this._current, d); // this = Elemento actual (current) del Path
+                            this._current = interpolate(0); // Interpola entre el elemento actual y el nuevo valor de "d"
+                            return function(t) {
+                                return arc(interpolate(t));
+                            };
+                        });
+                });
+
+            // Incluye texto a la leyenda
+            legend.append("text")                                    
+                .attr("x", legendRectSize + legendSpacing)
+                .attr("y", legendRectSize - legendSpacing)
+                .text(function(d){return d});
+            
+            });
+        }
+        
+        </script>
+    </body>
+</html>

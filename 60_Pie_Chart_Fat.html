@@ -62,13 +62,13 @@
         </style>
     </head>
     <body>
-        
+
         <div class="title-holder">
             <h1 class="title">Quantification of MRI-PDFF</h1>
             <p class="subtitle">Proton Density Fat Fraction (PDFF) Mean</p>
             <p class="font">Uncheck labels to recalculate.</p>
         </div>
-        
+
         <div id="chart"></div> <!--Tambien se puede trabajar asi-->
 
         <script type="text/javascript">
@@ -80,7 +80,6 @@
         var nor1 = 0, nor2 = 3.72;
         var mil1 = nor2, mil2 = 5.43;
         var mod1 = mil2, mod2 = 9.11;
-        var sev = 11.17;
         // Los he sacado de aqui para que parezcan creibles
         // http://www.ijcem.com/files/ijcem0051721.pdf
             
@@ -214,7 +213,7 @@
                 grade = mod1+" - "+mod2;
             }
             if(d.data.label=="Severe"){
-                grade = "> "+sev;
+                grade = "> "+mod2;
             }
                             
             tooltip.select(".label").html(d.data.label); // Indica el el texto         
